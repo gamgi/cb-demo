@@ -1,0 +1,1456 @@
+//  White Noyce
+//      Coolbasic Demo, 2011
+//
+
+SCREEN 640,480  
+DefaultMask ON,255,0,255
+SetWindow "White noyce"
+//--//PRELOAD-------------------//
+    //FONTIT
+    Global fnt_01,fnt_02,fnt_03
+    fnt_01 = LoadFont("Courier", 48)
+    fnt_02 = LoadFont("Courier", 36)
+    fnt_03 = LoadFont("Arial", 66,1)
+    fnt_04 = LoadFont("Arial", 12)
+    Global fnt_img 'fonttikuva joka piiret‰‰n n‰ytˆlle
+    Global fnt_img2 'fonttikuva jota maketext2 k‰ytt‰‰
+    fnt_img=MakeImage(640,480)
+    fnt_img2=MakeImage(640,480)
+    fnt_ClearText()
+//------//LOADING-ikkuna//------//
+SetFont fnt_01
+For this_random_loop_prevents_drawscreen_fail = 0 To 1
+    fnt_MakeText("With great power comes",320,200,1,2)
+    fnt_MakeText("Great loading times...",320,240,1,2)
+    DrawImage fnt_img,0,0
+    DrawScreen Not i
+Next this_random_loop_prevents_drawscreen_fail
+//------------------------------//
+//TƒSSƒ KOHTAA MUUTAMA TYPE
+    //IKOSAEDERI (scene 5)
+
+    Type vertex
+        Field x#
+        Field y#
+        Field z#
+        
+        Field sx#
+        Field sy#
+    EndType
+    Type polygon
+        Field vertex0 //verteksien tyyppi-id't
+        Field vertex1
+        Field vertex2
+        Field visible
+    EndType
+//--//LATAUS--------------------//
+    //YLEISIƒ (frame-kuva tjne)
+    img_frame = LoadImage("data/frame.png")
+    Global img_screen
+    img_screen = MakeImage(640,480)
+        //n‰yttˆkuvan tyhjennys (kohtaukseen 2)
+        DrawToImage img_screen
+        Color 0,20,20
+        Box 0,0,640,480
+        DrawToScreen
+
+//--//Kohtaus specific
+    //00. NOICE
+        //Mit‰‰n ladata
+    //01. TUNNEL
+        //Tunnelin tekniikkaan voi tutustua: http://www.student.kuleuven.be/~m0216922/CG/tunnel.html
+        _01_img_texture=LoadImage("data/clouds2.png")
+        //Laske lookup-tablet (this baby is precalc) ... t‰ss‰kin on turhan iso taulukko ...
+        Dim _01_dist(640*2, 480 + 240) As integer //todo byte
+        Dim _01_ang(640*2, 480 + 240) As integer //todo byte
+        For y = 0 To 480+240
+            For x = 0 To 640*2
+                _01_dist(x, y) = (32.0 * 254 / Distance(x, y, 640, 360)) Mod 254
+                _01_ang(x, y) = ( 0.5 * 254 * GetAngle(x, y, 640, 360) / 180) Mod 254
+            Next x
+        Next y
+        //VIESTIT/teksti
+        fnt_img=MakeImage(640*2+100,80) //ett‰ pitk‰ teksti mahtuisi
+        fnt_ClearText()
+        'fnt_MakeText("  Oh wow, laggy tunnel, huh?",0,25,0,5,-200)
+        fnt_MakeText("Gamgi presents ... a dem ... eh, intro!",0,25,0,5,-200)
+        _01_text_img0 = CloneImage(fnt_img)
+        fnt_ClearText()
+        SetFont fnt_02
+        fnt_ClearText()
+        fnt_MakeText("The only difference between C++ And Coolbasic is that C++ has its limits.",0,25,0,5,-200)
+        _01_text_img1 = CloneImage(fnt_img)
+        SetFont fnt_01
+        fnt_img=MakeImage(640,480)
+    //02. COOL
+        //t‰hdet
+        Dim _02_star_x(100) As Float
+        Dim _02_star_y(100) As Float
+        For i=0 To 100
+            _02_star_x(i) = Cos(Rnd(0,359)) * (i * 2.9) //arvotaan paikat t‰hdille
+            _02_star_y(i) = Sin(Rnd(0,359)) * (i * 2.9)
+        Next i
+        //COOL REKURSIO :D
+        Type cool
+            Field x
+            Field y
+            Field x2
+            Field y2
+            Field w#
+            Field l#
+            Field h#
+            Field set
+        EndType
+        //REKURSIIVIJUTTU
+            //REKUSRISVOI
+            depth=0
+            draw_cool(320-800*0.63,240-800*0.10,800,0) //luo "rungon", eli sanan "COOL"
+            For handle.cool = Each cool //k‰yd‰‰n runko l‰pi niin ett‰ jokainen osa muodostaa uuden rungon
+                dir = GetAngle(handle\x,handle\y,handle\x2,handle\y2)
+                le# = Distance(handle\x,handle\y,handle\x2,handle\y2)/3.0
+                draw_cool(handle\x+Cos(dir+90)*le,handle\y-Sin(dir+90)*le,handle\l*0.94 ,dir)
+                depth=depth+1
+                If depth>=1+13+13^2 //kolme sukupolvea
+                    Exit
+                EndIf
+            Next handle
+    //03. rorschach etc.
+        //BLOBIT
+        _03_img_texture = LoadImage("Data/blobs2.png")
+        _03_img_null = MakeImage(640,480)
+        DrawToImage _03_img_null
+            Color 255,255,255
+            Box 0,0,640,4800
+        DrawToScreen
+        _03_balls = 10
+        Dim _03_ball_x(_03_balls) As Float
+        Dim _03_ball_y(_03_balls) As Float
+        Dim _03_ball_nx(_03_balls) As Float
+        Dim _03_ball_ny(_03_balls) As Float
+        //sijoitetaan blobit keskelle
+        For i=0 To _03_balls
+            _03_ball_nx(i) = -350
+            _03_ball_y(i) = 190 + i + Rand(-90,90)
+        Next i
+        Dim _03_val(640,480) As Float // mustan voimakkuus pisteess‰... eli niinku metapalloissa
+        Dim _03_blob_scroll As Float
+        Dim _03_blob_scroll_shift As integer //shiftaus, aina kun pallot menee ulos ikkunasta ne "siirret‰‰n oikeaan reunaan t‰ll‰"
+    //04. lensbobs
+        //Lookuptable suurennuslasille
+        Dim _04_magnify_x(100,100)
+        Dim _04_magnify_y(100,100)
+       
+        For y = 0 To 99
+            For x = 0 To 99
+                _04_a# = GetAngle(x,y,50,50)
+                _04_d# = Distance(x,y,50,50) + 0.1
+                _04_magnify_x(x,y)=50-Cos(_04_a)*(2.0^(_04_d *0.1))*1.5 'jtn laskuja
+                _04_magnify_y(x,y)=50+Sin(_04_a)*(2.0^(_04_d *0.1))*1.5
+            Next x
+        Next y
+         
+        //BLOBI
+        Dim _04_ball_x As Float
+        Dim _04_ball_y As Float
+        _04_ball_x = 320.0
+        _04_ball_y = 240.0
+        
+        Dim _04_timer As Float
+        Dim _04_blob_scroll As Float 'sis‰‰nliukumisliukuluku lol
+        Dim _04_blob_contract As Byte 'se kun pallukat menee keskelle
+        Dim _04_blob_contract_t As Float
+        //KUVAT
+        _04_img_effect = MakeImage(100,100)
+        _04_img_back = LoadImage("Data/bgb.jpg")
+        //Tyhj‰‰ efekti
+        DrawToImage _04_img_effect
+        Color 255,0,255
+        Box 0,0,100,100
+        DrawToScreen
+        _04_img_null = MakeImage(640,480)
+        DrawToImage _04_img_null
+            Color 255,255,255
+            Box 0,0,640,4800
+        DrawToScreen
+
+    //05. 2nd-icosaedron
+        //ShAKKILAUTA
+        _05_img_chess = MakeImage(560,480)
+        Dim _05_ch_x As Float,_05_ch_z As Float
+        Dim _05_ch_cc,_05_ch_zz
+        Dim _05_ch_y As Float,_05_ch_z_scale As Float
+        Dim _05_ch_sx1,_05_ch_sx2,_05_ch_sy1 As Float
+        Dim _05_ch_sy As Float
+        Dim _05_ch_xx As Float //todo hurdur
+        Dim _05_ch_ys As Float
+        
+        //ESIRENDER÷I STILLIshakkilauta
+        _05_ch_y = -7.0
+        DrawToImage _05_img_chess
+        For _05_ch_z = 0 To 200
+            _05_ch_z_scale = 1.0 / (Float(_05_ch_z)/250.0 + 1.1)*32.0
+            For _05_ch_x = 0 To 9
+                _05_ch_xx = -8.0 + 1.6*_05_ch_x
+                _05_ch_sx1 = _05_ch_xx * _05_ch_z_scale
+                _05_ch_sx2 = (_05_ch_xx + 1.6) * _05_ch_z_scale
+                _05_ch_sy = -_05_ch_y * _05_ch_z_scale
+                
+                
+                If _05_ch_cc Then Color 133,99,144 Else Color 61,45,60
+                Line _05_ch_sx1 + 320, _05_ch_sy + 240 + (_05_ch_sy<0)*12, _05_ch_sx2 + 320, _05_ch_sy + 240  + (_05_ch_sy<0)*12
+                If _05_ch_z=0 Then
+                    If _05_ch_cc Then Color 113,79,124 Else Color 41,25,40
+                    Box _05_ch_sx1+320,_05_ch_sy+240,(_05_ch_sx2-_05_ch_sx1+1),12
+                EndIf
+                _05_ch_cc = Not _05_ch_cc
+            Next _05_ch_x
+            _05_ch_zz = _05_cH_zz + 1
+            If _05_ch_zz > 20 Then _05_ch_cc = Not _05_ch_cc : _05_ch_zz = 0
+        Next _05_ch_z
+        
+        DrawToScreen
+        
+        //IKOSAEDERI
+        //JƒNNƒ LASKUTYYLI joka muodostaa virheellisen ikosaederin, mutta ei v‰litet‰ siit‰ nyt. seh‰n _nh‰ytt‰‰_ oikealta. Miksi muuttaa?
+        ika#=2.25 'hurdur wutwut?
+        ike#=1.0
+        //TOP(actually bottom) 'v‰lill‰ kirjottelen englanniks...
+            a#=360.0/6.0
+            For i=0 To 5
+                'i=Float(i)
+                v0x=Cos(i*a+a)*2.0 
+                v0y=-ike
+                v0z=Sin(i*a+a)*2.0
+                
+                v1x=Cos(i*a)*2.0 
+                v1y=-ike'Sin(i*2*a)*2.0
+                v1z=Sin(i*a)*2.0
+                
+                NewPolygon(v0x,v0y,v0z,  v1x,v1y,v1z, 0.0,-ika,0.0)
+            Next i
+            //MID UP & bot
+            For i=0 To 5
+                //UP
+                v0x=Cos(i*a)*2.0 
+                v0y=-ike
+                v0z=Sin(i*a)*2.0
+                
+                v1x=Cos(i*a+a)*2.0 
+                v1y=-ike
+                v1z=Sin(i*a+a)*2.0
+                
+                v2x=Cos(i*a+a/2)*2.0 
+                v2y=ike
+                v2z=Sin(i*a+a/2)*2.0
+                NewPolygon(v0x,v0y,v0z,  v1x,v1y,v1z,  v2x,v2y,v2z)
+                //BOT
+                v0x=Cos(i*a+a/2)*2.0 
+                v0y=ike
+                v0z=Sin(i*a+a/2)*2.0
+                
+                v1x=Cos(i*a-a/2)*2.0 
+                v1y=ike
+                v1z=Sin(i*a-a/2)*2.0
+                
+                v2x=Cos(i*a)*2.0 
+                v2y=-ike
+                v2z=Sin(i*a)*2.0
+                
+                NewPolygon(v0x,v0y,v0z,  v1x,v1y,v1z,  v2x,v2y,v2z)
+            Next i
+            //BOT(top)
+            For i=0 To 5
+                v0x=Cos(i*a-a/2)*2.0 
+                v0y=ike
+                v0z=Sin(i*a-a/2)*2.0
+                
+                v1x=Cos(i*a+a/2)*2.0 
+                v1y=ike
+                v1z=Sin(i*a+a/2)*2.0
+                 NewPolygon(v0x,v0y,v0z,  v1x,v1y,v1z, 0.0,ika,0.0)
+            Next i
+        //IKOSAEDERIN ominaisuuksia
+        Global _05_y As Float, _05_x As Float
+        Dim _05_ys As Float
+        Global _05_flatc As float 'flat-"constant". kuinka littanassa se on.
+        Dim _05_s As Float 'light strenght, eli luminosity
+    //06. Jaa, en jaksanu deklaroida n‰it‰
+    
+    
+    
+    //07. loppu credits
+        Dim _07_ball_x(1) As Float
+        Dim _07_ball_y(1) As Float
+        Dim _07_ball_xs(1) As Float
+        Dim _07_ball_ys(1) As Float
+        //amigatekstuuri
+        _07_texture=MakeImage(640,480)
+        DrawToImage _07_texture
+        For y=0 To 480 Step 20
+            For x=0 To 640 Step 20
+                c=(Not c)
+                cc=c*255
+                Color 255,255-cc,255-cc
+                Box x,y,20,20
+            Next x
+        Next y
+        DrawToScreen
+        //pallukat ruudun ulkopuolelle aluks
+        _07_ball_x(0)=-50
+        _07_ball_x(1)=580
+        _07_ball_y(0)=-50
+        _07_ball_y(1)=530
+        _07_ball_xs(0)=-0.04
+        _07_ball_xs(1)=0.4
+        _07_ball_ys(1)=0.8
+        _07_beat_rec = 13*4
+        Dim _07_f As Float
+        Dim _07_text_y As Float
+//--//Ajastus ja demon kulku
+    Global _cgs As Float
+    Global _frame_t 'As Float
+    Global _frame_start_t 'As Float
+    Global _fps As Float
+    Global _scene As Byte
+    Global _demo_t As integer
+    Global _demo_start_t As integer
+    Global _scene_ticks
+    Global _scene_t
+    Global _scene_t_start
+    Global _demo_start_t
+    Global _t //yleinen ajastusvariable
+    Global _t2 //viel‰ parempi ja yleisempi ajastusmuuttuja
+    Global _beat_t
+    Global _interval As Float
+    _interval = (60000.0/180.0)*(2.0/6.0) //t‰m‰ pit‰‰ paikkansa..6ticks/row (jos miettii trakkerifilua)
+    Global _scene_part
+
+
+//--//ITSE DEMOTUS--------------------------------//
+    _demo_start_t = Timer()
+    //MUSIIKKI
+    _snd_t = PlaySound("data/trak2.mp3")
+    'Goto scene_04
+//Kohtaus-tsydeemi k‰ytt‰‰ gotoa. Haters gonna hate.
+//SCENE//00//NOICE INTRO
+scene_00: //-----------------------------SCENE 00--noice------------//
+    changescene(0)
+    fnt_ClearText()
+    //--//INIT
+    _00_beat_rec = 12*4
+    _00_fade_top = 0
+    Repeat
+        //--//UPDATE
+            //SCENEn ajastus
+            If _beat_t >= _00_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    //PƒIVITƒ TEKSIT
+                    fnt_MakeText("White Noyce",320,210,1)
+
+                    _00_beat_rec = 17*4                    
+                ElseIf _scene_part = 2 Then
+                    //PƒIVITƒ TEKSIT
+                    fnt_MakeText("White Noyce",320,210,1,2)
+                    _00_beat_rec = 20*4      
+                ElseIf _scene_part = 3 Then
+                    //PƒIVITƒ TEKSIT
+                    fnt_ClearText()
+                    fnt_MakeText("White Noyce",320,210,1,5)
+                    _00_beat_rec = 29*4      
+                ElseIf _scene_part = 4
+                    _00_beat_rec = 32*4
+                    _00_fade_s = _t
+                Else
+                    Goto scene_01
+                EndIf
+            EndIf
+        //--//RENDER
+            //NOICE
+            _00_xs = Not _00_xs
+            _00_ys = _00_ys + 1
+            _00_ys = _00_ys Mod 3
+
+            For y = 22+_00_ys*4+_00_fade_top To 450-_00_fade_top Step 8
+                For x = 30 + _00_xs*4 To 605 Step 10
+                    _00_xs = Rand(0,1)*2
+                    _00_s = Rand(20,205) //Random noice
+                    _00_s = _00_s + (Cos(y*(0.5+Sin(_t*2)*0.2)+_t*4)^2) shl 6 //H‰iriˆaallot. kauheaa laskua..eik‰ edes synkattu. QQ BABE
+                    
+                    _00_s = Min(255,_00_s)
+                    Color _00_s, _00_s, _00_s
+                    Box x + Rand(-1,1)*3, y + Rand(-1,1)*2, 3, 1
+                Next x
+            Next y
+            //TEXT
+            If _scene_part=3 Then DrawImage fnt_img,Rand(-1,1),1 Else DrawImage fnt_img,0,1
+            //FADEOUT
+            If _scene_part = 4 Then
+                Color 0,0,0
+                _00_s=_t-_00_fade_s
+                _00_fade_top = Min(440,_00_s^2)
+                Box 0,0,640,_00_s^2
+                Box 0,480-_00_s^2,640,_00_s^2
+                Color 255,255,255
+                If _00_s^2>150 Then Box 0,_00_s^2,640,480-2*(_00_s^2)
+            EndIf
+            //FRAME
+           DrawImage img_frame,0,1 //0,0 j‰‰dytt‰‰ ruudun koneellani _SCREEN_FIX_
+
+           debugshow()
+           If KeyDown(15) Then Text 0,0,FPS()
+        DrawScreen OFF
+        //AJASTUS
+        do_the_timing()
+    Forever
+scene_01: //-----------------------------SCENE 01--tunnel------------//
+    changescene(1)
+    fnt_ClearText()
+    //--//INIT  
+        //Taustav‰ri
+        Color 0,20,20
+        Box 30,22,620,60
+        Box 30,400,620,60
+        //Teksti
+        _01_text_x0# = 440
+        _01_text_x1# = 640*2
+        Cls
+        //seuraavaksi tapahtuu milloin
+        _01_beat_rec = 77*4
+    Repeat
+        //--//UPDATE
+            //SCENEn ajastus
+            If _beat_t >= _01_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    _01_fade_s = _t
+                    _01_beat_rec = 80*4
+                ElseIf _scene_part = 2 Then
+                    Goto scene_02
+                EndIf
+                
+            EndIf
+            //TUNNELin liike
+            _01_shifty# = _01_shifty + 1'0*_cgs //todo cgs
+            _01_shifty = _01_shifty Mod 254
+            _01_shiftx = _01_shiftx + 100*_cgs
+            _01_shiftx = _01_shiftx Mod 254
+            
+            _01_cam_x = 320 + Sin(_t*0.5)*150
+            _01_cam_y = 120 + Sin(_t)*120
+            //Interlacing - juttu
+            _01_xp = Not _01_xp
+            _01_xs = (Not _01_xs)*2
+            //TEKSTIN LIIKE
+            _01_text_x0# = _01_text_x0 - Abs(Sin(_scene_t*(360.0/_interval/32))*155) * _cgs
+            _01_text_x1# = _01_text_x1 - Abs(Sin(_scene_t*(360.0/_interval/32))*155) * _cgs
+        //--//RENDER
+            //BG
+            If _scene_part = 1 Then
+                f=(_t-_01_fade_s)+0.1
+                Color 0,0,0
+                Box 0,0,640,480
+            EndIf
+            //TUNNELI
+            Lock Image(img_screen)
+            Lock Image(_01_img_texture)
+            For y = _01_xp+_01_top_fade+50 To 479-_01_top_fade-50 Step 6
+                For x = 22 To 609 Step 4
+                    pixl = GetPixel2( (_01_dist(x + _01_cam_x, y + _01_cam_y) + _01_shiftx) Mod 254     ,   (_01_ang(x + _01_cam_x, y + _01_cam_y) + _01_shifty) Mod 254, Image(_01_img_texture))
+
+                    PutPixel2 x + _01_xs, 80+y/1.5, pixl, Image(img_screen)
+                    'PutPixel2 x + _01_xs, 81+y/1.5, pixl, Image(img_screen) //optimoinnin takia kommentoitu. Jos omaat nopean koneen, poista toki kommentti!
+                Next x
+            Next y
+            Unlock Image(img_screen)
+            Unlock Image(_01_img_texture)
+            
+            DrawImage img_screen,0,-f^2
+            
+            DrawImage _01_text_img0,_01_text_x0,20
+            DrawImage _01_text_img1,_01_text_x1,380+f^2-10
+
+            
+            //KEHYS
+            DrawImage img_frame,0,1 //0,0 j‰‰dytt‰‰ ruudun koneellani _SCREEN_FIX_
+        debugshow()
+        If KeyDown(15) Then Text 0,0,FPS()
+        DrawScreen
+        //AJASTUS
+        do_the_timing()
+    Forever
+    
+scene_02: //-----------------------------SCENE 02--cool------------//
+    changescene(2)
+    fnt_ClearText()
+    //--//INIT  
+        //ZOOMAUS
+        _02_zoom#=0.0
+        //seuraavaksi tapahtuu milloin
+        _02_beat_rec = 16*4
+    Repeat
+        //--//UPDATE
+            //SCENEn ajastus
+            If _beat_t >= _02_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    _02_zoom_s = _t
+                    _02_beat_rec = 32*4
+                ElseIf _scene_part = 2 Then
+                    _02_zoom_s = _t
+                    _02_beat_rec = 37*4
+                ElseIf _scene_part = 3 Then
+                    _02_beat_rec = 49*4
+                ElseIf _scene_part = 4 Then
+                    _02_beat_rec = 56*4
+                    _02_fade_s = _t
+                ElseIf _scene_part = 5
+                    Goto scene_03
+                EndIf
+                
+            EndIf
+            //COOL LIIKE
+            If _scene_part = 1 Then _02_zoom = 1+Sin((_t-_02_zoom_s)+270)
+            If _scene_part = 2 Then _02_zoom = 2-(_t-_02_zoom_s)*0.05
+            
+        //--//RENDER
+            //TAUSTA (fade)
+            If _scene_part = 4 Then
+                f=(_t-_02_fade_s)^2
+                f=Min(255,f)
+                Color f,f,f
+                Box 0,0,640,480
+            EndIf
+            //T‰hdet
+            If _scene_part<4 Then
+                Lock SCREEN()
+                For i=0 To 100
+                    ang = GetAngle(0, 0, _02_star_x(i), _02_star_y(i))
+                    
+                    _02_d# = Distance(0, 0, _02_star_x(i), _02_star_y(i))
+                    If _scene_part>=2 Then ang=ang+_02_d*0.2
+                    _02_star_x(i) = _02_star_x(i) + Cos(ang) * _02_d * 3.0*_cgs
+                    _02_star_y(i) = _02_star_y(i) - Sin(ang) * _02_d * 3.0*_cgs
+                    
+                    outside_screen = (_02_star_x(i)<-310 Or _02_star_x(i)>309 Or _02_star_y(i)<-230 Or _02_star_y(i)>229)
+                    If outside_screen  Then
+                        If _scene_part < 3
+                            _02_star_x(i)=Rnd(-2.2,2.2):_02_star_y(i)=Rnd(-2.2,2.2)
+                            While _02_star_x(i) = 0 And _02_star_y(i) = 0
+                                _02_star_x(i)=Rnd(-2.2,2.2):_02_star_y(i)=Rnd(-2.2,2.2)
+                            Wend
+                        EndIf
+                        //TƒHDET HƒVII VAAN RUUDUN ULKOPUOLELLE jos _scene_part =3
+                    Else
+                        _02_d# = Distance(0, 0, _02_star_x(i), _02_star_y(i))
+                        s = 10 + Int(_02_d * (245.0/270.0))
+                        pixl = s + (s Shl 8) + (s Shl 16) + (255 Shl 24)
+                        PutPixel2 _02_star_x(i)+320, _02_star_y(i)+240, pixl, SCREEN()
+                        PutPixel2 _02_star_x(i)+320, _02_star_y(i)+241, pixl, SCREEN()
+                    EndIf
+                Next i
+                Unlock SCREEN()
+            EndIf
+            //COOL
+            Color 255,255,255
+            If _02_zoom>0 And _scene_part>0 Then
+            For handle.cool = Each cool //k‰yd‰‰n jokainen viiva l‰pi ja piirret‰‰n se jos se on ruudun sis‰ll‰...t‰ysin optimoimatonta kamaa
+                        _02_x = handle\x*_02_zoom+(1-_02_zoom)*320
+                        _02_y = handle\y*_02_zoom + (1-_02_zoom)*240
+                        _02_x2 = handle\x2*_02_zoom+(1-_02_zoom)*320
+                        _02_y2 = handle\y2*_02_zoom+ (1-_02_zoom)*240
+                        If   (_02_x>0 And _02_y>0 And _02_x<640 And _02_y<480) Or (_02_x2>0 And _02_y2>0 And _02_x2<640 And _02_y2<480) Then 
+                             Line _02_x,_02_y,_02_x2,_02_y2
+                        EndIf
+            Next handle
+            EndIf
+
+            //FRAME
+            DrawImage img_frame,0,1 //0,0 j‰‰dytt‰‰ ruudun koneellani _SCREEN_FIX_
+        debugshow()
+        If KeyDown(15) Then Text 0,0,FPS()
+        DrawScreen  'OFF
+
+        //AJASTUS
+        do_the_timing()
+    Forever
+scene_03: //-----------------------------SCENE 03--rorschach------------//
+    changescene(3)
+    fnt_ClearText()
+    //--//INIT  
+    _03_beat_rec = 120*4
+
+        //TEKSTI
+        SetFont fnt_03
+        fnt_cleartext()
+        
+        fnt_MakeText2("with",320,0,1,-16777216,2)
+        fnt_MakeText2("COOLBASIC",320,0,1,-16777216)
+        SetFont fnt_01
+
+    Repeat
+    
+        //--//UODATE
+            //SCENEn ajastus
+            If _beat_t >= _03_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    _03_blob_scroll = 0
+                    _03_beat_rec = 132*4
+
+                ElseIf _scene_part = 2 Then
+                    _03_blob_scroll_shift = 640
+                    _03_blob_scroll = 0
+                    _03_beat_rec = 140*4
+                    //MUUTA TEKSTI
+                    SetFont fnt_03
+                    fnt_cleartext()
+                    
+                    fnt_MakeText2("everything is",320,0,1,-16777216,2)
+                    fnt_MakeText2("POSSIBLE",320,0,1,-16777216)
+                    SetFont fnt_01
+                ElseIf _scene_part = 3 Then
+                    _03_blob_scroll = 0
+                    _03_blob_scroll_shift = 0
+                    _03_beat_rec = 158*4
+                ElseIf _scene_part = 4
+                    _03_fade = 0
+                    _03_fade_t = 0
+                    _03_beat_rec = 164*4
+                ElseIf _scene_part = 5
+                    Goto scene_04
+                EndIf
+            EndIf
+            
+            //FADE
+            If _scene_part = 4
+                If _beat_t >=_03_fade_t Then
+                    _03_fade_t = _beat_t + 1
+                    _03_fade = _03_fade + 10
+                EndIf
+            EndIf
+            //SCROLLAUS, eli pallot pois, teksti sis‰‰n etc
+            If _scene_part = 1 Or _scene_part=2  Or _scene_part=3 Then
+                If _03_blob_scroll<640 Then _03_blob_scroll = _03_blob_scroll+(640 - _03_blob_scroll)*2.0*_cgs
+            EndIf
+            //PALLOJEN AJASTUS
+            If _beat_t >=_03_blob_t Then
+                //UUDET PAIKAT
+                For i=0 To _03_balls
+                    _03_ball_nx(i)=Rand(0,385)
+                    _03_ball_ny(i)=Rand(20,455)
+                Next i
+                //UUS AIKA
+                _03_blob_t = _beat_t + 8
+            EndIf
+            //PALLOJEEN LIIKE ... v‰h‰n niinku curvevalue
+            For i=0 To _03_balls
+                _03_ball_x(i)=_03_ball_x(i)+(_03_ball_nx(i) - _03_ball_x(i))*5.0*_cgs
+                _03_ball_y(i)=_03_ball_y(i)+(_03_ball_ny(i) - _03_ball_y(i))*5.0*_cgs
+            Next i
+            //SCRAMBLE (v‰rin‰ efu)
+            If _beat_t >= 90*4 And _beat_t <= 95*4 Then
+                _03_scramble = 6 + Rand(0,1)*6
+            Else
+                _03_scramble = 12
+            EndIf
+        //--//RENDER
+            
+            //BALLS
+            For y = 0 To 479 Step 6
+                For x = 0 To 639/2+1 Step 12 //_SPEED_FIX_
+                    //LASKETAAN PISTEEN TUMMUUS
+                    h# = 0
+                    For i=0 To _03_balls //
+                        h = h +  (64.00 / Distance(x, y, _03_ball_x(i), _03_ball_y(i)))
+                    Next i
+                    
+                    c=(h^2)*4
+                    If c>450 Then c=450
+                    
+                    //PIIRRETƒƒN
+                    If c>=0
+                        CopyBox 0, c, _03_scramble, 6, x-320 + _03_shiftx * 6 - Int(_03_blob_scroll) + _03_blob_scroll_shift, y-240, Image(_03_img_texture)
+                        CopyBox 0, c, _03_scramble, 6, 320-6-x + _03_shiftx * 6 - Int(_03_blob_scroll) + _03_blob_scroll_shift, y-240 , Image(_03_img_texture)
+                    EndIf
+                Next x
+            Next y
+            //RUUDUN TYHJENNYS
+            If _scene_part = 1 Or _scene_part = 3 or _scene_part = 4 Then Color 255,255,255:Box 640-_03_blob_scroll,0,_03_blob_scroll,480
+            If _scene_part = 2 Then Color 255,255,255:Box 0,0,640-_03_blob_scroll,480
+            //TEKSTI
+            If _scene_part = 1 Or _scene_part = 3 Or _scene_part = 4 Then DrawImage fnt_img,640-_03_blob_scroll,1
+            If _scene_part = 2 Then DrawImage fnt_img,-_03_blob_scroll,1
+            //FADE
+            If _scene_part = 4
+                Randomize 1337
+                
+                For i=0 To _03_fade
+                    x=Rand(0,6)
+                    y=Rand(0,5)
+                    CopyBox x*(640/7),y*(480/6),(640/7),(480/6),x*(640/7)-320,y*(480/6)-240,Image(_04_img_back),SCREEN()
+                Next i
+                
+                Randomize Timer()
+            EndIf
+            //FRAME
+            DrawImage img_frame, 0, 1
+        debugshow()
+        If KeyDown(15) Then Text 0,0,FPS()
+        DrawScreen  
+
+        //AJASTUS
+        do_the_timing()
+    Forever
+    
+scene_04: //-----------------------------SCENE 03--lensblobs------------//
+    changescene(4)
+    fnt_ClearText()
+    _04_blob_scroll = 480
+    //--//INIT  
+    _04_beat_rec = 14*4
+    _04_blob_contract_t = 1.0
+    _04_fadef#=0.0
+    '_scene_part=5
+Repeat
+    //--//UPDATE
+        //SCENEn ajastus
+        If _beat_t >= _04_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    _04_blob_scroll = 0
+                    _04_beat_rec = 28*4
+                ElseIf _scene_part = 2 Then
+
+                    _04_beat_rec = 36*4
+                ElseIf _scene_part = 3 Then
+                    _04_blob_contract_t=0.0
+                    _04_beat_rec = 75*4
+                ElseIf _scene_part = 4 Then
+                    _04_blob_contract_t=1.0
+                    _04_fade_s = _t2
+                    
+                    _04_beat_rec = 80*4
+                ElseIf _scene_part = 5 Then
+
+                    _04_fadef# = 0
+                    _04_fade_s = _t2
+                    _04_beat_rec = 84*4          
+                ElseIf _scene_part = 6 Then
+                    Goto scene_05
+ 
+                EndIf
+        EndIf
+        //ALKUPERƒISPALLON liike
+        _04_ball_x = 345 + Cos(_t2*0.7+1) * 150
+        _04_ball_y = 220 + Cos(_t2*0.5+1) * 150
+        //SCROLLAUS SISƒƒN, ja liike etc
+        If _scene_part = 0 Then
+            If _04_blob_scroll>0 Then _04_blob_scroll = _04_blob_scroll - 100*_cgs 'skrollaa sis‰‰n
+        ElseIf _scene_part = 2
+            If _04_blob_contract_t>0 Then _04_blob_contract_t = _04_blob_contract_t - (_04_blob_contract_t)*0.8*_cgs
+        ElseIf _scene_part = 3
+            If _04_blob_contract_t<1 Then _04_blob_contract_t = _04_blob_contract_t + (1-_04_blob_contract_t)*0.5*_cgs
+            
+        EndIf
+    //--//RENDER
+        //TAUSTA
+        If _scene_part<3 Then DrawImage _04_img_back,0,1
+        //SUURENNUS (yksi pallo)
+        If _scene_part<5 Then //hoitaa sen ett‰ fade sujuu
+            Lock Image(_04_img_back)
+            Lock Image(_04_img_effect)
+            sx = _04_ball_x
+            sy = _04_ball_y
+            For yy = sy To sy+99
+                For xx = sx To  sx+99 Step 2
+                    x=xx-sx
+                    y=yy-sy
+                    If Distance(x, y, 50, 50) < 50 Then
+
+                        pixl = GetPixel2( (_04_magnify_x(x, y) + sx) Mod 639, (_04_magnify_y(x, y) + sy) Mod 479, Image(_04_img_back))
+                        pixl = pixl Shl 8 : r = pixl shr 24 : pixl = pixl Shl 8 : g = pixl shr 24 : pixl = pixl Shl 8 : b = pixl Shr 24
+                        
+                        b = Min(255, b + 20 * Sin(_t2) + 20) //mukavaa sinist‰ v‰lill‰
+                        pixl = b + (g Shl 8) + (r Shl 16) + (255 Shl 24)
+                        //PIIRRETƒƒN efektikuvaan
+                        PutPixel2 x, y+ys, pixl, Image(_04_img_effect)
+                        PutPixel2 x+1, y+ys, pixl, Image(_04_img_effect)
+                    EndIf
+                    
+                Next xx
+            Next yy
+            Unlock Image(_04_img_effect)
+            Unlock Image(_04_img_back)
+            
+            //PALLOT
+            For i = 0 To 9
+                z#=1.0+Cos(_t2+i*180)*0.4
+                If _scene_part<3 Then
+                    _04_tmp_x# = 270 + Cos(_t2*2.7 + i*36)*150*_04_blob_contract_t
+                    _04_tmp_y# = 190 - Cos(_t2*1.5 + i*36)*150*_04_blob_contract_t
+                Else
+                    _04_tmp_x# = 275+Cos(i*36+_t2*0.6+45*z)*160*z*_04_blob_contract_t'*(1+Cos(i*45)*0.7)
+                    _04_tmp_y# = 190-Sin(i*36+_t2*0.6+45*z)*160*z*_04_blob_contract_t'*(1-Sin(i*45)*0.5)
+                EndIf
+                DrawImage _04_img_effect, _04_tmp_x + _04_blob_scroll * (_scene_part = 0), _04_tmp_y
+            Next i
+
+            
+            //FRAME
+           DrawImage img_frame, 0, 1
+       EndIf
+       //FADE
+       If _scene_part = 4 Then
+            _04_fadef# = _04_fadef# + 300.0*_cgs
+            _04_fade = _04_fadef*2
+
+             Color 255,255,255
+
+            Box 0,0,_04_fade,240
+            Box 640-_04_fade,240,_04_fade,240
+
+       ElseIf _scene_part = 5 Then
+            _04_fadef# = _04_fadef# + 135.0*_cgs
+            If _04_fadef >240 Then _04_fadef = 240
+
+            Color 0,0,0
+            Box 0,0,640,480
+            Color 255,255,255
+            Box 0,_04_fadef,640,240-_04_fadef
+            Box 0,240,640,240-_04_fadef
+       EndIf
+    debugshow()
+    DrawScreen OFF
+
+    //AJASTUS
+    do_the_timing()
+Forever
+
+
+scene_05: //-----------------------------SCENE 05--future-ikosaeder------------//
+    changescene(5)
+    fnt_ClearText()
+    _interval = (60000.0/200.0)*(2.0/6.0) //TAHTILAJI MUUTTUU...200bpm
+    //--//INIT
+    _05_ch_y = 0.0
+    _05_ch_ys = 0.0
+    _05_beat_rec = 12*4
+
+    rotate2(0,0,1,9) 'tiltataan ikosaederi
+    _05_y=-11.0
+    _05_x = 0.0
+    _05_ys=0.0
+    _05_flatc=0.0
+    _05_bounce# = 0.0
+    _05_hops = 0
+Repeat
+
+    //--//UPDATE
+        //SCENEn ajastus
+        If _beat_t >= _05_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    _05_ch_y = 0.0
+                    _05_beat_rec = 40*4
+                ElseIf _scene_part = 2
+                    _05_beat_rec = 48*4
+                ElseIf _scene_part = 3
+                    _05_start_t = _t
+                    _05_beat_rec = 84*4
+                ElseIf _scene_part = 4
+
+                    Goto scene_06
+                EndIf
+        EndIf
+        //SHAKKILAUDAN PUTOAMINEN
+        If _scene_part = 0 Then
+            _05_ch_ys = _05_ch_ys - 0.5*_cgs
+            _05_ch_y = _05_ch_y + _05_ch_ys
+            If _05_ch_y < -7.0 Then _05_ch_y = -7.0 : _05_ch_ys = - _05_ch_ys * 0.6
+        EndIf
+        //PY÷RIMINEN
+        rotate(0,1,0,120.0*_cgs)
+        If _scene_part =1 Or _scene_part = 2
+            //HYTKYMINEN
+            If _05_bounce > 0 Then _05_bounce = _05_bounce - 0.01 Else _05_bounce = 0.0
+            If _05_y<=1.5 Then _05_flatc = ((1+Sin((_t-_05_bounce_t-45)*25.0))*20.0)*_05_bounce
+        EndIf
+        If _scene_part = 1 Then
+            //PAINOVOIMA
+            _05_ys = _05_ys + 5.0 * _cgs
+            _05_y = _05_y + _05_ys * _cgs
+            If _05_y >= 3.5 Then _05_y = 3.5: _05_ys = - _05_ys * 0.86:_05_hops = _05_hops + 1'95'8
+            
+
+            //LITTANUUS-purkkaa
+            If _05_y>=1.5 Then
+                _05_flatc = ((_05_y-1.5)*30.0)
+                _05_bounce = 1.0
+                _05_bounce_t = _t
+
+            EndIf
+        ElseIf _scene_part = 2
+            //SIIRRETƒƒN TIETTYYN KOHTAAN
+            _05_ys = _05_ys + (-_05_ys)*1.5*_cgs
+            _05_y = _05_y + _05_ys * _cgs 
+            _05_y = _05_y + (-_05_y)*1.5 * _cgs 
+            //shakkilauta putoaa
+            _05_ch_y = _05_ch_y + (200.0 - _05_ch_y)*0.9*_cgs
+        ElseIf _scene_part = 3
+            _05_rad#=Sin((_t-_05_start_t)*0.6)*2.0+Sin((_t-_05_start_t)*0.1)*5.0
+            _05_y =  Sin((_t-_05_start_t)*2)*_05_rad*1.5
+            _05_x = Cos((_t-_05_start_t)*3)*(_05_rad+_05_herpderp#)
+            _05_herpderp# = _05_herpderp# + _cgs*0.8
+            //shakkilauta putoaa
+            _05_y = _05_y + ( - _05_y)*0.99*_cgs
+            _05_ch_y = _05_ch_y + (200.0 - _05_ch_y)*0.5*_cgs
+        
+        EndIf
+
+        //PROJEKTIO
+        project()
+    //--//RENDER
+        //SHAKKILAUTA
+        If _scene_part = 0 Then
+            _05_ch_cc = 0
+            _05_ch_zz = 0
+            For _05_ch_z = 0 To 200
+                _05_ch_z_scale# = 1.0 / (Float(_05_ch_z)/250.0 + 1.1)*32.0
+                For _05_ch_x = 0 To 9
+                    _05_ch_xx = -8.0 + 1.6*_05_ch_x
+                    _05_ch_sx1 = _05_ch_xx * _05_ch_z_scale
+                    _05_ch_sx2 = (_05_ch_xx + 1.6) * _05_ch_z_scale
+                    _05_ch_sy = -_05_ch_y * _05_ch_z_scale
+                    
+                    
+                    If _05_ch_cc Then Color 133,99,144 Else Color 61,45,60
+                    Line _05_ch_sx1 + 320, _05_ch_sy + 240 + (_05_ch_sy<0)*12, _05_ch_sx2 + 320, _05_ch_sy + 240  + (_05_ch_sy<0)*12
+                    If _05_ch_z=0 Then
+                        If _05_ch_cc Then Color 113,79,124 Else Color 41,25,40
+                        Box _05_ch_sx1+320,_05_ch_sy+240,(_05_ch_sx2-_05_ch_sx1+1),12
+
+                    EndIf
+                    _05_ch_cc = Not _05_ch_cc
+                Next _05_ch_x
+                _05_ch_zz = _05_cH_zz + 1
+                If _05_ch_zz > 20 Then _05_ch_cc = Not _05_ch_cc : _05_ch_zz = 0
+            Next _05_ch_z
+        ElseIf _scene_part>0
+            DrawImage _05_img_chess,0,_05_ch_y //kuvalauta (lolo)
+        EndIf
+
+        //IKOSAEDERI
+        If _scene_part > 0 And _scene_part<4 Then
+            n=0
+            For handle05.polygon = Each polygon
+                //HAETAAN VERTEKSIT (neon typej‰)
+                vertex0.vertex = ConvertToType(handle05\vertex0) //TODO n‰t‰h‰n ei poisteta koskaan... mut eikai tartekaan. neon yksitt‰isii
+                vertex1.vertex = ConvertToType(handle05\vertex1)
+                vertex2.vertex = ConvertToType(handle05\vertex2)
+                //ONKO NƒKYVISSƒ ... kiitos koodaajalle t‰st‰kin.
+                visible = ((vertex1\sx - vertex0\sx) * (vertex2\sy - vertex0\sy) - (vertex2\sx - vertex0\sx) * (vertex1\sy - vertex0\sy) )
+                //PIIRRƒ
+                If visible Then
+                    _05_s = Min(1.0,Abs(visible/5700.0)) //light strength
+                    If _05_s > smax# Then smax#=_05_s
+                    If visible<=0 Then
+                        //VƒRI
+                        If ((n) Mod 2) Then Color 18*_05_s,98*_05_s,239*_05_s Else Color 182*_05_s,208*_05_s,241*_05_s //2nreal
+                        //KOLMIO         
+                        trifill(vertex0\sx,vertex0\sy,vertex1\sx,vertex1\sy,vertex2\sx,vertex2\sy)
+                        Line vertex0\sx,vertex0\sy,vertex1\sx,vertex1\sy
+                        Line vertex2\sx,vertex2\sy,vertex0\sx,vertex0\sy
+                        Line vertex1\sx,vertex1\sy,vertex2\sx,vertex2\sy
+                    Else
+                        //VƒRI
+                         Color 70*_05_s,84*_05_s,100*_05_s
+                        //KOLMIO - ovela shortcut, ei piirret‰ sinist‰ takapuolella :D
+                        If (n Mod 2)=0 Then trifill(vertex0\sx,vertex0\sy,vertex1\sx,vertex1\sy,vertex2\sx,vertex2\sy,1)
+                    
+                    EndIf
+                EndIf
+                n=n+1
+            Next handle05
+        EndIf
+    debugshow()
+    DrawScreen
+    //AJASTUS
+    do_the_timing()
+Forever
+scene_06: //-----------------------------SCENE 06--insert disk------------//
+    changescene(6)
+    fnt_ClearText()
+    //--//INIT
+    fnt_MakeText("Insert disk #2",320,210,1)
+    _06_beat_rec = 10
+    
+Repeat
+
+    //--//UPDATE
+        //SCENEn ajastus
+        If _beat_t >= _06_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    _06_beat_rec = 11
+                ElseIf _scene_part = 2 Then
+                    _06_beat_rec = 13
+                ElseIf _scene_part = 3 Then
+                    _06_beat_rec = 7*4
+                ElseIf _scene_part = 4 Then
+                    _06_beat_rec = 13*4
+                ElseIf _scene_part = 5 Then
+                   Goto scene_07
+                    
+                EndIf
+        EndIf
+    //TEXT
+    If _scene_part = 1 Then
+        //txt
+        DrawImage fnt_img,0,1
+        //FRAME
+        DrawImage img_frame, 0, 1
+    ElseIf _scene_part = 3 Then
+        //txt
+        DrawImage fnt_img,Rand(-2,2),1
+        //FRAME
+        DrawImage img_frame, 0, 1
+    EndIf
+    If _scene_part = 4 Then DrawImage img_frame, 0, 1
+    debugshow()
+    DrawScreen
+    //AJASTUS
+    do_the_timing()
+    
+Forever
+    
+    
+    
+    
+scene_07: //-----------------------------SCENE 07--credits------------//
+    changescene(7)
+    fnt_img = MakeImage(600,1000)
+    fnt_ClearText()
+    
+    //--//INIT    
+    _interval = (60000.0/180.0)*(2.0/6.0) //TAHTI TAKAS
+    fnt_MakeText("White noyce",320,0,1)
+    fnt_MakeText("by Gamgi",370,40,1)
+    SetFont fnt_02
+    fnt_MakeText("(se hiljanen j‰tk‰)",320,90,1)
+    SetFont fnt_01
+    fnt_MakeText("Coolbasic 'introkisa'",320,270,1)
+    fnt_MakeText("2011",330,320,1)
+    fnt_MakeText("Greets To:",320,470,1)
+    fnt_MakeText("#coolbasic,  #cb2,",320,520,1)
+    fnt_MakeText("Jaycock,  CCE,",320,570,1)
+    fnt_MakeText("Ja loppu irkki :)",320,620,1)
+    fnt_MakeText("This was my",320,820,1)
+    fnt_MakeText("first demo...intro",320,870,1)
+    fnt_MakeText("Gamgi kuittaa...",320,920,1)
+
+    _07_text_y = 480
+    
+Repeat
+    //--//UPDATE
+    //--//UPDATE
+        //SCENEn ajastus
+        If _beat_t >= _07_beat_rec Then
+                _scene_part = _scene_part + 1
+                If _scene_part = 1 Then
+                    _07_beat_rec = 165*4
+                ElseIf _scene_part = 2 Then
+                    
+                    End
+                EndIf
+        EndIf
+        //PALLOT
+        For i=0 To 1
+            //PALLOJEN LIIKE
+            For k=0 To 1
+                If k<>i Then
+                    a# = GetAngle(_07_ball_x(i),_07_ball_y(i),_07_ball_x(k),_07_ball_y(k))
+                    _07_f# = 4.0'0.02
+                    _07_ball_xs(i)=_07_ball_xs(i)+Cos(a)*_07_f*_cgs
+                    _07_ball_ys(i)=_07_ball_ys(i)-Sin(a)*_07_f*_cgs
+
+                EndIf
+                
+            Next k
+            //MOVE
+            _07_ball_x(i)=_07_ball_x(i)+_07_ball_xs(i)*_cgs*8.0
+            _07_ball_y(i)=_07_ball_y(i)+_07_ball_ys(i)*_cgs*8.0
+             //SEINƒT
+            If _scene_part>0 Then
+                 If _07_ball_x(i)<0 Then _07_ball_x(i)=0:_07_ball_xs(i)=-_07_ball_xs(i)
+                If _07_ball_x(i)>640-100 Then _07_ball_x(i)=640-100:_07_ball_xs(i)=-_07_ball_xs(i)
+                If _07_ball_y(i)<0 Then _07_ball_y(i)=0:_07_ball_ys(i)=-_07_ball_ys(i)
+                If _07_ball_y(i)>480-100 Then _07_ball_y(i)=480-100:_07_ball_ys(i)=-_07_ball_ys(i)
+            EndIf
+        Next i
+        
+        //TEKSTI
+        If _07_text_y>-670 Then _07_text_y = _07_text_y - 25.0*_cgs
+    //--//RENDER
+        //MAGNIFY
+        For i=0 To 1
+            Lock Image(_07_texture)
+            Lock Image(_04_img_effect)
+            sx = _07_ball_x(I)
+            sy = _07_ball_y(i)
+            For yy=sy To sy+99 Step 2
+                For xx=sx To sx+99 Step 2
+                    If xx>0 And xx<640 And yy>0 And yy<480 Then
+                        x=xx-sx
+                        y=yy-sy
+                        If Distance(x,y,50,50)<50 Then
+                            pixl =  GetPixel2((_04_magnify_x(x,y)+sx) Mod 639 ,(_04_magnify_y(x,y)+sy) Mod 480,image(_07_texture))
+                            PutPixel2 x,y+ys,pixl,Image(_04_img_effect)
+                            PutPixel2 x+1,y+ys,pixl,Image(_04_img_effect)
+                        EndIf
+                    EndIf
+                Next xx
+            Next yy
+            Unlock Image(_04_img_effect)
+            Unlock Image(_07_texture)
+            DrawImage _04_img_effect,sx,sy
+        Next i
+       
+        //TXT
+        DrawImage fnt_img, 0,1+_07_text_y
+        //FRAME
+        DrawImage img_frame, 0, 1
+    //
+   debugshow()
+    DrawScreen
+    //AJASTUS
+    do_the_timing()
+    
+Forever
+    
+    
+    
+    
+//--//FUNKTIOT-----------------------------------//
+
+Function debugshow()
+remstart
+    Color 80,80,80
+    Box 0,0,110,200
+    Color 200,0,0
+    Box 0,140,Sin(_scene_t*(360.0/_interval/4))*90,10
+    Color 0,0,0
+    Text 0,0,_scene+":"+_scene_part
+    Text 0,35,_beat_t/4
+    
+    Text 0,70,_frame_t
+    Text 0,105,Int(_fps)+" "+FPS()
+    
+    Text 0,150,Left(Str(_cgs),6)
+remend
+EndFunction
+
+Function do_the_timing() //t‰m‰ funktio huolehtii koko demon ajoituksesta
+    _scene_t = Timer() - _scene_t_start
+    _t = _scene_t / 40 //timevariable monessa paikassa.
+    
+    _beat_t = _scene_t/(_interval)
+    
+    _frame_t = Timer()-_frame_start_t
+    _frame_start_t = Timer()
+    _cgs = _frame_t/1000.0000
+    
+    _t2 = _t2 + 60.0 * _cgs
+EndFunction
+
+Function ChangeScene(scene)//Vaihtaa kohtausta, nollaa kohtaustimerit etc
+    _scene = scene
+    _scene_t_start = timer()
+    _scene_part = 0
+    _beat_t = 0
+
+    _frame_start_t = Timer()
+    _t2 = 0.0
+EndFunction
+
+Function fnt_ClearText() //tyhjent‰‰ fnt_img:n
+    Color 255,0,255
+    DrawToImage fnt_img
+    Box 0,0,ImageWidth(fnt_img),ImageHeight(fnt_img)
+    DrawToScreen
+EndFunction
+
+
+Function fnt_MakeText(txt$, x, y, centered, style=7, clr=-1) //renderˆi hassunhauskan keltaisen tekstin fnt_img:n. clr = color. img=kuvahandle
+    w = TextWidth(txt):h = TextHeight(h)
+    //Piirret‰‰n normaali teksti‰
+    DrawToImage fnt_img
+        Color 0,0,0
+        If centered Then CenterText x, -y, txt Else Text x, -y, txt     //_TEXT_FIX_ !
+    DrawToScreen
+    //Muokataan sit‰
+    Lock Image(fnt_img)
+    shift_x = Max(1, x - w/2)
+    For yy = 1+y To h-1+y
+        For xx = shift_x To w-1+shift_x
+            ok = 0
+            pixl = GetPixel2( xx, yy, Image(fnt_img))
+            If pixl = -16777200 Then //jos lˆydettiin mustaa teksti‰
+                For i=0 To style //eri efuja
+                    x2=xx+Cos(i*45)
+                    y2=yy-Sin(i*45)
+                    If x2>0 And y2>0 And x2<ImageWidth(fnt_img)-2 And y2<ImageHeight(fnt_img)-2 Then //huono tapa est‰‰ kuvan ulkopuolelle kirjoittamis mav
+                        If GetPixel2( x2, y2, Image(fnt_img)) = -65281
+                            PutPixel2 x2, y2,clr,Image(fnt_img) //annetaan sille valkoiset reunat
+                           
+                        EndIf
+                        ok = 1
+                    EndIf
+                Next i
+                
+            EndIf
+            If ok Then PutPixel2 x2+1,y2,clr,Image(fnt_img) //hauska efekti
+        Next xx
+    Next yy
+    Unlock Image(fnt_img)
+
+EndFunction
+
+Function fnt_MakeText2(txt$, x, y, centered, clr=-1,siz=6) //ruma ruma ruma funktio
+    w = TextWidth(txt):h = TextHeight(h)
+    //CLEAR
+    Color 255,0,255
+    DrawToImage fnt_img2
+    Box 0,0,ImageWidth(fnt_img2),ImageHeight(fnt_img2)
+    DrawToScreen
+    //Piirret‰‰n normaali teksti‰
+    DrawToImage fnt_img2
+        Color 0,0,0
+        If centered Then CenterText x, -y, txt Else Text x, -y, txt     //_TEXT_FIX_ !
+    DrawToScreen
+    //Muokataan sit‰
+    Lock Image(fnt_img)
+    Lock Image(fnt_img2)
+    shift_x = Max(1, x - w/2)
+    For yy = 1+y To h-1+y
+        
+        For xx = shift_x To w-1+shift_x
+            If xx>0 And xx<640 And yy>0 And yy<480 Then //todo; what's this i don't even...
+                pixl = GetPixel2( xx, yy, Image(fnt_img2))
+                If pixl = -16777200 Then
+                    If xx>0 And yy>0 And xx<ImageWidth(fnt_img)-2 And yy<ImageHeight(fnt_img)-2 Then //huono tapa est‰‰ kuvan ulkopuolelle kirjoittamis mav
+                        If GetPixel2( xx, yy, Image(fnt_img2)) <> -65281
+                            For kk=0 To (siz/3)+(siz=6)*2'3
+                                PutPixel2 xx+1, yy*siz+kk+siz*10,clr,Image(fnt_img)
+                            Next kk
+                        EndIf
+                    EndIf
+                EndIf
+            EndIf
+        Next xx
+    Next yy
+    Unlock Image(fnt_img)
+    Unlock Image(fnt_img2)
+EndFunction
+
+
+
+Function draw_line(x,y,x2,y2)
+            handle.cool = New(cool)
+
+        handle\x = x2
+        handle\y = y2
+        handle\x2 = x
+        handle\y2 = y
+        handle\l = Distance(x,y,x2,y2)
+EndFunction
+
+
+
+
+
+Function draw_cool(x,y,l,ang)
+    If l<0 Then Return 0
+    w#=l
+    h#=l/5.0
+    lw#=w/5.0 //letterwidth
+    sw#=(w/5.0)      //spacewidth
+    //kirjoittaa COOL, ruma trigonomihirviˆ, jonka voisi tehd‰ nopeammin mutta ei jaksa...hyihyi
+    //C
+    draw_line( x,y,x + Cos(ang-90)*h,y - Sin(ang-90)*h)//|
+    draw_line( x + Cos(ang)*lw, y - Sin(ang)*lw,x ,y) //yl‰viiiv
+    draw_line( x+Cos(ang-90)*h ,y-Sin(ang-90)*h, x + Cos(ang)*lw+Cos(ang-90)*h, y - Sin(ang)*lw-Sin(ang-90)*h) //alviiiv   
+    //O
+    draw_line(    x + Cos(ang)*(lw+sw) + Cos(ang)*lw,y - Sin(ang)*(lw+sw) - Sin(ang)*lw, x + Cos(ang)*(lw+sw),y - Sin(ang)*(lw+sw)) //yl‰viiv
+    draw_line( x + Cos(ang)*(lw+sw),y - Sin(ang)*(lw+sw),    x + Cos(ang)*(lw+sw) + Cos(ang-90)*h,y - Sin(ang)*(lw+sw) - Sin(ang-90)*h) //|
+    draw_line( x + Cos(ang)*(lw+sw) + Cos(ang-90)*h,y - Sin(ang)*(lw+sw) - Sin(ang-90)*h,    x + Cos(ang)*(lw+sw) + Cos(ang-90)*h+ Cos(ang)*lw,y - Sin(ang)*(lw+sw) - Sin(ang-90)*h- Sin(ang)*lw)  //alaviiv
+    draw_line(   x + Cos(ang)*(lw+sw+lw) + Cos(ang-90)*h,y - Sin(ang)*(lw+sw+lw) - Sin(ang-90)*h, x + Cos(ang)*(lw+sw+lw),y - Sin(ang)*(lw+sw+lw)) //|
+    //O
+    draw_line( x + Cos(ang)*(2*lw+2*sw) + Cos(ang)*lw,y - Sin(ang)*(2*lw+2*sw) - Sin(ang)*lw,   x + Cos(ang)*(2*lw+2*sw),y - Sin(ang)*(2*lw+2*sw)) //yl‰viiv
+    draw_line( x + Cos(ang)*(2*lw+2*sw),y - Sin(ang)*(2*lw+2*sw),    x + Cos(ang)*(2*lw+2*sw) + Cos(ang-90)*h,y - Sin(ang)*(2*lw+2*sw) - Sin(ang-90)*h) //|
+    draw_line( x + Cos(ang)*(2*lw+2*sw) + Cos(ang-90)*h,y - Sin(ang)*(2*lw+2*sw) - Sin(ang-90)*h,    x + Cos(ang)*(2*lw+2*sw) + Cos(ang-90)*h+ Cos(ang)*lw,y - Sin(ang)*(2*lw+2*sw) - Sin(ang-90)*h- Sin(ang)*lw)  //alaviiv
+    draw_line( x + Cos(ang)*(3*lw+2*sw) + Cos(ang-90)*h,y - Sin(ang)*(3*lw+2*sw) - Sin(ang-90)*h,  x + Cos(ang)*(3*lw+2*sw),y - Sin(ang)*(3*lw+2*sw)) //|
+    //L
+    draw_line( x + Cos(ang)*(3*lw+3*sw),y - Sin(ang)*(3*lw+3*sw),x + Cos(ang)*(3*lw+3*sw)+Cos(ang-90)*h,y - Sin(ang)*(3*lw+3*sw)-Sin(ang-90)*h)
+    draw_line( x + Cos(ang)*(3*lw+3*sw)+Cos(ang-90)*h,y - Sin(ang)*(3*lw+3*sw)-Sin(ang-90)*h,x + Cos(ang)*(3*lw+3*sw)+Cos(ang-90)*h+Cos(ang)*lw,y - Sin(ang)*(3*lw+3*sw)-Sin(ang-90)*h-Sin(ang)*lw)
+     
+ 
+EndFunction
+
+
+
+
+
+Function NewPolygon(x0#,y0#,z0#,x1#,y1#,z1#,x2#,y2#,z2#)
+    poly.polygon = New(polygon)
+    //VERTEKSIT
+        vert.vertex = New(vertex)
+        vert\x=x0:vert\y=-y0:vert\z=z0
+        poly\vertex0 = ConvertToInteger(vert)
+        
+        vert.vertex = New(vertex)
+        vert\x=x1:vert\y=-y1:vert\z=z1
+        poly\vertex1 = ConvertToInteger(vert)
+        
+        vert.vertex = New(vertex)
+        vert\x=x2:vert\y=-y2:vert\z=z2
+        poly\vertex2 = ConvertToInteger(vert)
+    //VISIBLE
+    poly\visible = 1
+EndFunction
+//leet-rivi
+
+Function project() //LASKEE VERTEKSIEN(p‰iden) ruutuprojektion
+    For handle.vertex = Each vertex
+        
+        If handle\z<>0 Then z#=0.1+9.0 Else z#=handle\z+9.0 //todo heltal
+            z_scale# = 1.0 / (z)*320.0
+            
+            handle\sx = ((handle\x + _05_x) * z_scale*(1+_05_flatc/128)) + 320.0 //todo heltal
+            handle\sy = ((handle\y*Cos(_05_flatc)) * z_scale+_05_y * z_scale) + 240.0
+    Next handle
+EndFunction
+
+
+
+Function rotate2(x#,y#,z#,ang#) //pyˆritt‰‰ verteksej‰ haluttujen akseleiden mukaan ang-kulman. tyyliin x=1,z=0,y=0,ang=2.0
+
+    //KIITOS koodajalle hyv‰st‰ 3d-tutosta. kvaterniolaskut:
+    sin_a# = Sin( ang/2 )
+    qx# = x * sin_a*0.2
+    qy# = y * sin_a
+    qz# = z * sin_a
+    qw# = Cos( ang/2 )
+    // selitin itselleni mit‰ teen
+    // UNIT QUATERNION LASKU. t‰ll‰ matriisilla vaan * verteksimatriisi niin ei tule gimbal lockia :) godly!
+    //   [x]    [(1 -(2 * (qy^2)) -(2 * (qz^2)) )  ,   (2*qx*qy - 2*qz*qw)                  ,               (2*qx*qz + 2*qy*qw)] 
+    //   [y] *  [(2*qx*qy + 2*qz*qw)               ,   (1 -(2 * (qx^2)) -(2 * (qz^2)) )     ,               (2*qy*qz - 2*qx*qw)]
+    //   [z]    [(2*qx*qz - 2*qy*qw)               ,   (2*qy*qz + 2*qx*qw)                  ,  (1 -(2 * (qx^2)) -(2 * (qy^2)) )]
+    For handle.vertex = Each vertex
+        //KERROTAAN verteksimatriisi kvaterniomatriisilla
+        x2# = (handle\x * (1 -(2 * (qy^2)) -(2 * (qz^2)) ))     + (handle\y * (2*qx*qy - 2*qz*qw))                  + (handle\z * (2*qx*qz + 2*qy*qw))
+        y2# = (handle\x*(2*qx*qy + 2*qz*qw))                    + (handle\y * (1 -(2 * (qx^2)) -(2 * (qz^2)) ))     + (handle\z * (2*qy*qz - 2*qx*qw))
+        z2# = (handle\x*(2*qx*qz - 2*qy*qw))                    + (handle\y*(2*qy*qz + 2*qx*qw))                    + ( handle\z * (1 -(2 * (qx^2)) -(2 * (qy^2)) ))
+        //UPDATE
+        handle\x = x2
+        handle\y = y2
+        handle\z = z2
+    Next handle
+
+EndFunction
+Function rotate(x#,y#,z#,ang#) //pyˆritt‰‰ verteksej‰ haluttujen akseleiden mukaan ang-kulman...y-akselin ymp‰ri
+    For handle.vertex = Each vertex
+        //KERROTAAN verteksimatriisi tavallisella y-kierto matriisilla. (lol mit‰‰n kvaternioita tartteta)
+        x2# = (handle\x * Cos(ang))     + (handle\z * -Sin(ang))
+        y2# = handle\y
+        z2# = (handle\x * Sin(ang))   + (handle\z * Cos(ang))
+        
+        //UPDATE
+        handle\x = x2
+        handle\y = y2
+        handle\z = z2
+    Next handle
+
+EndFunction
+
+
+
+//Kiitos atomimallille(original) ja koodaajalle (optimoitu)
+//T‰h‰n funktioon on ainoastaan modattu scanlinet
+Function TriFill(x1,y1,x2,y2,x3,y3,s=0) 
+       
+        If y2<y1 Then 'jos p2 on ylemp‰n‰ kuin p1 vaihdetaan niiden paikkaa
+            tmp=y1
+            y1=y2
+            y2=tmp
+           
+            tmp=x1
+            x1=x2
+            x2=tmp
+        EndIf
+       
+        If y3<y1 Then 'jos p3 on ylemp‰n‰ kuin p1 vaihdetaan niiden paikkaa
+            tmp=y1
+            y1=y3
+            y3=tmp
+       
+            tmp=x1
+            x1=x3
+            x3=tmp
+        EndIf
+
+        If y3<y2 Then 'jos p3 on ylemp‰n‰ kuin p2 vaihdetaan niiden paikkaa
+            tmp=y2
+            y2=y3
+            y3=tmp
+           
+            tmp=x2
+            x2=x3
+            x3=tmp
+        EndIf
+
+        'pisteet ovat nyt j‰rjestyksess‰
+        'ylh‰‰lt‰ alas p1(x1,y1), p2(x2,y2), p3(x3,y3)
+        dy1=y2-y1'pystysuora matka p1:sta p2:seen
+        dx1=x2-x1'vaakasuora matka p1:sta p2:seen
+        dy2=y3-y1'pystysuora matka p1:sta p3:meen
+        dx2=x3-x1'vaakasuora matka p1:sta p3:meen
+        yd=dy2 Mod 2
+        shift=(y1 Mod 2)-s //TƒMƒ mahdollistaa "multilayerin", eli scanlinet
+        If dy1 Then 'jos kolmion yl‰osa on pidempi kuin 0
+            'k‰yd‰‰n l‰pi kaikki vaakaviivat kolmion yl‰osassa(p1-p2)
+            For i = y1 To y2 Step 2'10
+                'shift=(i Mod 2)
+                'lasketaan seuraava x-koordinaatti p1:st‰ p2:seen
+                ax=x1+((i-y1)*dx1)/dy1
+                'lasketaan seuraava x-koordinaatti p1:st‰ p3:meen
+                bx=x1+((i-y1)*dx2)/dy2
+                Box ax,i+shift,bx-ax,1 'piirret‰‰n viiva kolmion reunojen v‰lille
+                Box ax+(bx-ax),i+shift,-(bx-ax),1
+                'Line ax,i+shift,bx,i+shift
+                'Line ax+(bx-ax),i+shift,ax,i+shift
+            Next i
+        EndIf
+       
+        dy1=y3-y2'pystysuora matka p2:sta p3:meen
+        dx1=x3-x2'vaakasuora matka p2:sta p3:meen
+        shift=(y2 Mod 2)-s //TƒMƒ mahdollistaa "multilayerin"
+        If dy1 Then 'jos kolmion alaosa on pidempi kuin 0
+            'k‰yd‰‰n l‰pi kaikki vaakaviivat kolmion alaosassa(p2-p3)
+            For i = y2 To y3 Step 2
+                'shift=(i Mod 2)
+                'lasketaan seuraava x-koordinaatti p2:st‰ p3:meen
+                ax=x2+((i-y2)*dx1)/dy1
+                'lasketaan seuraava x-koordinaatti p1:st‰ p3:meen
+                bx=x1+((i-y1)*dx2)/dy2
+
+                If bx>ax Then
+                    Box ax,i+shift,bx-ax,1 'piirret‰‰n viiva kolmion reunojen v‰lille
+                    'Line ax,i+shift,bx,i+shift
+                Else
+                    Box ax+(bx-ax),i+shift,-(bx-ax),1
+                    'Line ax+(bx-ax),i+shift,ax,i+shift
+                EndIf
+            Next i
+        EndIf
+    EndFunction
